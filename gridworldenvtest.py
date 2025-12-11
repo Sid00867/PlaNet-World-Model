@@ -38,6 +38,7 @@ env.reset()
 done = False
 while not done:
     action = env.env.action_space.sample()
+#     print(env.env.unwrapped.agent_pos ,env.goal_pos)
     obs, reward, terminated, truncated, info, _ = env.step(action)
 #   showimage(obs['image'])
     env.render()

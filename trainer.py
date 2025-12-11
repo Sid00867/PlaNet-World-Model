@@ -50,7 +50,6 @@ def seed_replay_buffer(num_episodes= seed_replay_buffer_episodes):
     print(f"Seeded replay buffer with {num_episodes} episodes.")        
 
 
-
 def convergence_trainer():
 
     outer_iter = 0
@@ -93,5 +92,3 @@ def convergence_trainer():
 if __name__ == "__main__":
     seed_replay_buffer()
     convergence_trainer()
-    
-

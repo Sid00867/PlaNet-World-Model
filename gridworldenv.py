@@ -7,7 +7,7 @@ from __future__ import annotations
 
 ENV_GRID_SIZE     = 10
 TILE_SIZE         = 4
-SEE_THROUGH_WALLS = False
+SEE_THROUGH_WALLS = True
 
 # ===================================================
 
@@ -117,6 +117,86 @@ class SimpleEnv(MiniGridEnv):
         self.place_agent()  # Auto-finds valid position (0,0) check passes
         
         self.mission = "reach the goal"
+
+    # def _gen_grid(self, width: int, height: int):
+    #     """
+    #     Generates a random valid grid. 
+    #     Retries until a solvable path from Agent -> Goal exists.
+    #     """
+    #     max_retries = 100
+        
+    #     for _ in range(max_retries):
+    #         # 1. Create empty grid with surrounding walls
+    #         self.grid = Grid(width, height)
+    #         self.grid.wall_rect(0, 0, width, height)
+
+    #         # 2. Randomize Goal Placement
+    #         # place_obj finds an empty spot automatically
+    #         self.goal_pos = self.place_obj(Goal(), max_tries=100)
+
+    #         # 3. Randomize Obstacles
+    #         # Density: 15-20% of the grid is obstacles. 
+    #         # 10x10 grid = 100 tiles. ~15 walls.
+    #         num_obstacles = int((width * height) * 0.15) 
+            
+    #         for _ in range(num_obstacles):
+    #             self.place_obj(Wall(), max_tries=100)
+
+    #         # 4. Randomize Agent Placement
+    #         self.place_agent()
+
+    #         # 5. CRITICAL: Check solvability
+    #         if self._is_reachable():
+    #             self.mission = "reach the goal"
+    #             return  # Success! Keep this grid.
+
+    #     # If we failed 100 times (super rare), fallback to a simple open room
+    #     # print("Warning: Map generation failed 100 times. Fallback to empty room.")
+    #     self.grid = Grid(width, height)
+    #     self.grid.wall_rect(0, 0, width, height)
+    #     self.place_obj(Goal())
+    #     self.place_agent()
+    #     self.mission = "reach the goal"
+
+    def _is_reachable(self):
+        """
+        Simple Breadth-First Search (BFS) to verify the goal is reachable.
+        Returns: True if a path exists, False otherwise.
+        """
+        start_pos = self.agent_pos
+        queue = [start_pos]
+        visited = set()
+        visited.add(start_pos)
+
+        # Directions: Right, Down, Left, Up
+        dirs = [(1, 0), (0, 1), (-1, 0), (0, -1)]
+
+        while queue:
+            current = queue.pop(0)
+
+            # If we found the goal, the map is valid
+            if current == self.goal_pos:
+                return True
+
+            cx, cy = current
+            
+            # Explore neighbors
+            for dx, dy in dirs:
+                nx, ny = cx + dx, cy + dy
+
+                # Check bounds (inside grid)
+                if 0 <= nx < self.grid.width and 0 <= ny < self.grid.height:
+                    # Check if not visited
+                    if (nx, ny) not in visited:
+                        # Check if not a wall
+                        cell = self.grid.get(nx, ny)
+                        # MiniGrid logic: None is empty, Goal is walkable. Wall is not.
+                        if cell is None or isinstance(cell, Goal):
+                            visited.add((nx, ny))
+                            queue.append((nx, ny))
+        
+        # Queue empty, goal never found
+        return False
 
 
 
@@ -256,8 +336,15 @@ class RLReadyEnv:
     # -------------------------------------------------
 
     def reset(self, **kwargs):
+        # >>> FORCE RANDOM SEEDING <<<
+        # If no seed is provided, generate a random one.
+        # This ensures the agent spawns in a new location every episode
+        # and the world model learns global features, not just one path.
+        if "seed" not in kwargs:
+            kwargs["seed"] = np.random.randint(0, 2**31 - 1)
+            
         obs = self.env.reset(**kwargs)
-        self.goal_pos = self._find_goal_pos()   # ✅ cache once per episode
+        self.goal_pos = self._find_goal_pos()   
         return obs
 
 

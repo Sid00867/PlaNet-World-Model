@@ -15,7 +15,6 @@ MODEL_PATH = weights_path
 NUM_EPISODES = 5
 STEP_DELAY = 0.05   # seconds between frames
 
-
 rssmmodel = rssm().to(DEVICE)
 rssmmodel.load_state_dict(torch.load(MODEL_PATH, map_location=DEVICE))
 rssmmodel.eval()
@@ -34,8 +33,6 @@ def showimage(image):
 
     plt.imshow(image)
     plt.show()
-
-
 
 
 def play():
@@ -60,7 +57,6 @@ def play():
                 a_onehot = plan(h, s).unsqueeze(0)
 
                 action = a_onehot.argmax(-1).item()
-                # action = env.env.action_space.sample()  # for random actions during playtest
                 
                 obs_next_raw, reward, terminated, truncated, info, _ = playenv.step(action)
 
@@ -70,13 +66,16 @@ def play():
 
                 obs_next = preprocess_obs(obs_next_raw)
 
-                (mu_post, _), _, o_recon, _, h = rssmmodel.forward_train(
-                    h, a_onehot, obs_next.unsqueeze(0)
+                obs_embed = rssmmodel.obs_encoder(obs_next.unsqueeze(0))
+
+                (mu_post, _), _, o_recon, _, h, s = rssmmodel.forward_train(
+                    h_prev=h,
+                    s_prev=s,
+                    a_prev=a_onehot, 
+                    o_embed=obs_embed
                 )
 
                 showimage(o_recon)
-
-                s = mu_post
 
                 playenv.render()
                 time.sleep(STEP_DELAY)

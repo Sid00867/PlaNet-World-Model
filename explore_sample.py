@@ -36,19 +36,17 @@ def run_data_collection(buffer, pbar):
 
         while env_steps < total_env_steps:
 
-            #getting action, adding noise
-
             a_onehot = plan(h, s)              
             a_onehot = a_onehot.unsqueeze(0)  
 
+            # Exploration Noise
             if torch.rand(1) < exploration_noise:
                 rnd = torch.randint(0, action_dim, (1,))
                 a_onehot = F.one_hot(rnd, action_dim).float().to(DEVICE)
 
             action = a_onehot.argmax(-1).item()
 
-            # action repeat
-
+            # Action Repeat
             reward_sum = 0
             obs_next_raw = None
 
@@ -65,13 +63,18 @@ def run_data_collection(buffer, pbar):
                 if reached_goal or done or env_steps >= total_env_steps:
                     break
 
-
-            #getting s and h for next step iteration        
             obs_next = preprocess_obs(obs_next_raw)
-            (mu_post, _), _, _, _, h = rssmmodel.forward_train(
-                h, a_onehot, obs_next.unsqueeze(0)
+            obs_input = obs_next.unsqueeze(0) # (1, C, H, W)
+
+            obs_embed = rssmmodel.obs_encoder(obs_input)
+
+            (mu_post, _), _, _, _, h, s = rssmmodel.forward_train(
+                h_prev=h, 
+                s_prev=s, 
+                a_prev=a_onehot, 
+                o_embed=obs_embed
             )
-            s = mu_post      # posterior mean
+
 
             buffer.add_step(
                 obs.cpu(),
@@ -79,7 +82,6 @@ def run_data_collection(buffer, pbar):
                 reward_sum,
                 done
             )
-
 
             log_environment_step(
                 reward=reward_sum,
@@ -89,10 +91,7 @@ def run_data_collection(buffer, pbar):
                 success=reached_goal
             )
 
-
             obs = obs_next
-
-            # env.render()
 
             # Reset episode 
             if done:
