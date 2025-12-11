@@ -7,6 +7,7 @@ from environment_variables import *
 from rssm import rssm
 from planner import plan
 from explore_sample import preprocess_obs
+import matplotlib.pyplot as plt
 
 playenv = make_play_env()
 
@@ -18,6 +19,23 @@ STEP_DELAY = 0.05   # seconds between frames
 rssmmodel = rssm().to(DEVICE)
 rssmmodel.load_state_dict(torch.load(MODEL_PATH, map_location=DEVICE))
 rssmmodel.eval()
+
+def showimage(image):
+    # If it's a PyTorch tensor, convert to numpy
+    if hasattr(image, "detach"):
+        image = image.detach().cpu().numpy()
+
+    # Remove batch dimension: (1, 3, 28, 28) -> (3, 28, 28)
+    if image.shape[0] == 1:
+        image = image[0]
+
+    # Rearrange channels: (3, 28, 28) -> (28, 28, 3)
+    image = image.transpose(1, 2, 0)
+
+    plt.imshow(image)
+    plt.show()
+
+
 
 
 def play():
@@ -42,15 +60,21 @@ def play():
                 a_onehot = plan(h, s).unsqueeze(0)
 
                 action = a_onehot.argmax(-1).item()
+                # action = env.env.action_space.sample()  # for random actions during playtest
                 
                 obs_next_raw, reward, terminated, truncated, info, _ = playenv.step(action)
+
+                print(f"Step: {step}, Action: {action}, Reward: {reward:.3f}")
+
                 done = terminated or truncated
 
                 obs_next = preprocess_obs(obs_next_raw)
 
-                (mu_post, _), _, _, _, h = rssmmodel.forward_train(
+                (mu_post, _), _, o_recon, _, h = rssmmodel.forward_train(
                     h, a_onehot, obs_next.unsqueeze(0)
                 )
+
+                showimage(o_recon)
 
                 s = mu_post
 

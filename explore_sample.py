@@ -9,7 +9,6 @@ from planner import plan
 from metrics_hooks import log_environment_step
 
 
-
 def preprocess_obs(obs):
     if isinstance(obs, dict):
         obs = obs["image"]

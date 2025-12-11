@@ -38,7 +38,7 @@ env.reset()
 done = False
 while not done:
     action = env.env.action_space.sample()
-    obs, reward, terminated, truncated, info = env.step(action)
+    obs, reward, terminated, truncated, info, _ = env.step(action)
 #   showimage(obs['image'])
     env.render()
     time.sleep(0.1)

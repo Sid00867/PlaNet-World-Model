@@ -195,5 +195,5 @@ def make_play_env():
         agent_start_pos=(1,1),
         agent_start_dir=0,
         max_steps=None,
-        seed=82,
+        seed=33,
     )

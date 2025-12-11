@@ -79,7 +79,7 @@ def convergence_trainer():
                 "EnvSteps": stats["env_steps"],
             })
 
-            # torch.save(rssmmodel.state_dict(), weights_path)
+            torch.save(rssmmodel.state_dict(), weights_path)
 
     print("\n==== TRAINING CONVERGED ====")
     print("Final metrics:")
