@@ -17,7 +17,7 @@ def compute_loss(o_t, a_t, r_t, h_prev):
     )
 
     recon_loss  = F.mse_loss(o_recon, o_t, reduction='mean')
-    reward_loss = F.mse_loss(reward_pred, r_t, reduction='mean')
+    reward_loss = F.mse_loss(reward_pred, r_t.squeeze(-1), reduction='mean')
 
     log_sigma_post  = torch.clamp(log_sigma_post,  -log_sigma_clamp, log_sigma_clamp)
     log_sigma_prior = torch.clamp(log_sigma_prior, -log_sigma_clamp, log_sigma_clamp)

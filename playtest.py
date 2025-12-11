@@ -8,6 +8,7 @@ from rssm import rssm
 from planner import plan
 from explore_sample import preprocess_obs
 
+playenv = make_play_env()
 
 MODEL_PATH = weights_path  
 NUM_EPISODES = 5
@@ -42,7 +43,7 @@ def play():
 
                 action = a_onehot.argmax(-1).item()
                 
-                obs_next_raw, reward, terminated, truncated, info = playenv.step(action)
+                obs_next_raw, reward, terminated, truncated, info, _ = playenv.step(action)
                 done = terminated or truncated
 
                 obs_next = preprocess_obs(obs_next_raw)

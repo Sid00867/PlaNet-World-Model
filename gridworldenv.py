@@ -274,10 +274,12 @@ class RLReadyEnv:
         else:
             shaped_reward = 0
         
+        reached_goal = False
         # OVERRIDE: +1 success when AT goal (ignore 'done' action requirement)
         if goal_pos and agent_pos == goal_pos:
             reward = 1.0  # Force success
             term = True   # Ensure termination
+            reached_goal = True
         # Remove termination penalty if not success
         elif term:
             reward = 0.0  # No penalty
@@ -285,7 +287,7 @@ class RLReadyEnv:
         total_reward = reward + shaped_reward
         # print(f"dist:{dist}, sparse:{reward}, shaped:{shaped_reward}, total:{total_reward}")
         
-        return obs, total_reward, term, trunc, info
+        return obs, total_reward, term, trunc, info, reached_goal
 
 
     def _find_goal_pos(self):

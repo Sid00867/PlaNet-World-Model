@@ -168,7 +168,7 @@ class ExperimentMetrics:
     
     #plotting
 
-    def _plot_series(ax, data, title, ylabel, smooth=1, color=None):
+    def _plot_series(self, ax, data, title, ylabel, smooth=1, color=None):
         if len(data) == 0:
             ax.set_title(title + " (no data)")
             return

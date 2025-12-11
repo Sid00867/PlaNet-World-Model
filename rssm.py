@@ -57,17 +57,11 @@ class rssm(nn.Module):
         )
 
         self.decoder = nn.Sequential(
-            nn.ConvTranspose2d(128, 128, 3, 1, 1),
-            nn.ReLU(),
-
-            nn.ConvTranspose2d(128, 64, 4, 2, 1),
-            nn.ReLU(),
-
-            nn.ConvTranspose2d(64, 32, 4, 2, 1),
-            nn.ReLU(),
-
-            nn.ConvTranspose2d(32, 3, 4, 2, 1),
-            nn.Sigmoid(),
+            nn.ConvTranspose2d(128,128,3,1,1), nn.ReLU(),       
+            nn.ConvTranspose2d(128,64,4,2,1, output_padding=1), nn.ReLU(), 
+            nn.ConvTranspose2d(64,32,4,2,1),   nn.ReLU(),      
+            nn.ConvTranspose2d(32,3,4,2,1),                     
+            nn.Sigmoid()
         )
 
         # reward model

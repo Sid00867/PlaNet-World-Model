@@ -33,7 +33,7 @@ def seed_replay_buffer(num_episodes= seed_replay_buffer_episodes):
 
             action = rnd.item()
 
-            obs_next_raw, reward, terminated, truncated, info = env.step(action)
+            obs_next_raw, reward, terminated, truncated, info, _ = env.step(action)
             done = terminated or truncated
 
             obs_next = preprocess_obs(obs_next_raw)
@@ -47,6 +47,7 @@ def seed_replay_buffer(num_episodes= seed_replay_buffer_episodes):
 
             obs = obs_next
             episode_len += 1
+    print(f"Seeded replay buffer with {num_episodes} episodes.")        
 
 
 
@@ -66,7 +67,7 @@ def convergence_trainer():
                 seq_len=seq_len,
             )
 
-            run_data_collection(buffer)
+            run_data_collection(buffer, pbar)
 
             stats = METRICS.get_means()
 
@@ -78,8 +79,7 @@ def convergence_trainer():
                 "EnvSteps": stats["env_steps"],
             })
 
-            pbar.update(1)
-            torch.save(rssmmodel.state_dict(), weights_path)
+            # torch.save(rssmmodel.state_dict(), weights_path)
 
     print("\n==== TRAINING CONVERGED ====")
     print("Final metrics:")

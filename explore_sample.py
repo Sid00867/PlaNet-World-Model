@@ -19,7 +19,7 @@ def preprocess_obs(obs):
     return obs.to(DEVICE)
 
 
-def run_data_collection(buffer):
+def run_data_collection(buffer, pbar):
 
     rssmmodel.eval()          
 
@@ -55,14 +55,15 @@ def run_data_collection(buffer):
 
             for _ in range(action_repeat):
 
-                obs_next_raw, r, terminated, truncated, info = env.step(action)
+                obs_next_raw, r, terminated, truncated, info, reached_goal = env.step(action)
 
                 reward_sum += r
                 env_steps += 1
+                pbar.update(1)
                 episode_len += 1
 
                 done = terminated or truncated
-                if done or env_steps >= total_env_steps:
+                if reached_goal or done or env_steps >= total_env_steps:
                     break
 
 
@@ -86,6 +87,7 @@ def run_data_collection(buffer):
                 episode_len=episode_len,
                 done=done,
                 action_repeat=action_repeat,
+                success=reached_goal
             )
 
 
