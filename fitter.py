@@ -44,14 +44,17 @@ def train_sequence(C, dataset, batch_size, seq_len):
         o_t, a_t, r_t, _ = dataset.sample(batch_size, seq_len)
         B = o_t.size(0)
 
-        # Parallelize Encoding
-        # Flatten (B, T, C, H, W) -> (B*T, C, H, W)
+        #parallelize encoding
         flat_obs = o_t.view(-1, *obs_shape)
         flat_embed = rssmmodel.obs_encoder(flat_obs)
-        
-        # Reshape back to (B, T, Embed_Dim)
         embed_t = flat_embed.view(B, seq_len, -1)
         
+        # The RSSM needs "Prev Action" to predict "Current State".
+        # We shift actions right by 1, padding the start with zeros.
+        shifted_actions = torch.cat([
+            torch.zeros(B, 1, action_dim, device=DEVICE), # Dummy action for first step
+            a_t[:, :-1, :]                                # Shifted actions
+        ], dim=1)
 
         h_t = torch.zeros(B, deterministic_dim, device=DEVICE)
         s_t = torch.zeros(B, latent_dim, device=DEVICE) 
@@ -75,9 +78,9 @@ def train_sequence(C, dataset, batch_size, seq_len):
                 h_t,
                 s_t  
             ) = compute_loss(
-                o_t=o_t[:, L],
-                o_embed=embed_t[:, L], # pre-computed embedding
-                a_t=a_t[:, L],
+                o_t=o_t[:, L],          
+                o_embed=embed_t[:, L], 
+                a_t=shifted_actions[:, L], 
                 r_t=r_t[:, L],
                 h_prev=h_t,
                 s_prev=s_t
