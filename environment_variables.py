@@ -34,6 +34,11 @@ optimization_iters = 20      # Reduced from 15: "good enough" planning
 candidates = 2000            # Reduced from 500: less compute per step
 K = 100                      # Reduced from 50: fit to top 10%
 
+# planning_horizon = 20       # Reduced from 20: fast short-term planning
+# optimization_iters = 10      # Reduced from 15: "good enough" planning
+# candidates = 500            # Reduced from 500: less compute per step
+# K = 50                      # Reduced from 50: fit to top 10%
+
 # ======================================================
 # MODEL FITTING (CPU LIGHTWEIGHT)
 # ======================================================
