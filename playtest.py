@@ -5,7 +5,7 @@ import torch
 
 from environment_variables import *
 from rssm import rssm
-from planner import plan
+from planner import plan, reset_planner
 from explore_sample import preprocess_obs
 import matplotlib.pyplot as plt
 
@@ -41,6 +41,7 @@ def play():
 
         print(f"\nEpisode {ep + 1}/{NUM_EPISODES}")
 
+        reset_planner()
         obs_raw, _ = playenv.reset()
         obs = preprocess_obs(obs_raw)
 

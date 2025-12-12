@@ -55,3 +55,8 @@ def plan(h_t, s_t):
         softmax_best_action = torch.softmax(mean[0], dim=-1)       
         best_action = torch.nn.functional.one_hot(softmax_best_action.argmax(dim=-1), num_classes=action_dim).float()
         return best_action
+    
+
+def reset_planner():
+    global previous_mean
+    previous_mean = None    

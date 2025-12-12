@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from environment_variables import *
 from replaybuffer import ReplayBuffer
 from fitter import rssmmodel
-from planner import plan
+from planner import plan, reset_planner
 
 from metrics_hooks import log_environment_step
 
@@ -95,6 +95,7 @@ def run_data_collection(buffer, pbar):
 
             # Reset episode 
             if done:
+                reset_planner()
                 obs_raw, _ = env.reset()
                 obs = preprocess_obs(obs_raw)
                 h = torch.zeros(1, deterministic_dim, device=DEVICE)

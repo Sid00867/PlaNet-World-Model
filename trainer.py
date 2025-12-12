@@ -9,6 +9,7 @@ from explore_sample import run_data_collection
 from replaybuffer import ReplayBuffer
 from metrics import METRICS, plot_metrics
 from explore_sample import preprocess_obs
+from planner import reset_planner
 
 buffer = ReplayBuffer(
     capacity_episodes=replay_buffer_capacity,
@@ -20,7 +21,7 @@ buffer = ReplayBuffer(
 
 def seed_replay_buffer(num_episodes= seed_replay_buffer_episodes):
     for ep in range(num_episodes):
-
+        reset_planner()
         obs_raw, _ = env.reset()
         obs = preprocess_obs(obs_raw)
         done = False

@@ -40,7 +40,6 @@ from minigrid.wrappers import (
 # Built-in MiniGrid envs
 from minigrid.envs import DoorKeyEnv, KeyCorridorEnv
 
-
 # ===================================
 # Custom MiniGrid Environment
 # ===================================
