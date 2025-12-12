@@ -75,7 +75,7 @@ def play():
                     o_embed=obs_embed
                 )
 
-                showimage(o_recon)
+                # showimage(o_recon)
 
                 playenv.render()
                 # time.sleep(STEP_DELAY)

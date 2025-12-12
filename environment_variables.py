@@ -133,7 +133,7 @@ K = 50                      # Reduced from 50: fit to top 10%
 
 C = 20                       # Reduced from 20: Train less, act more
 batch_size = 16              # Reduced from 16: Fits in CPU cache better
-seq_len = 20                # Reduced from 25: Faster backprop
+seq_len = 40                # Reduced from 25: Faster backprop
 
 # ======================================================
 # EXPLORATION
@@ -147,7 +147,7 @@ action_repeat = 2
 # REPLAY BUFFER
 # ======================================================
 
-replay_buffer_capacity = 2000   
+replay_buffer_capacity = 3000   
 max_episode_len = 100        # Short episodes (if not solved in 50, fail)
 seed_replay_buffer_episodes = 20 # Quick start
 
@@ -163,7 +163,7 @@ recon_eps = 1e-4
 psnr_eps = 0.05
 min_success = 0.20          # Stop if we hit 20% success (proof of learning)
 min_steps = 250            # Minimum interactions
-max_steps = 10000            # Hard stop after ~5-10 mins
+max_steps = 30000            # Hard stop after ~5-10 mins
 
 # ======================================================
 # TRAIN ENV

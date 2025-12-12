@@ -1,5 +1,6 @@
 from environment_variables import *
 import torch
+import torch.nn.functional as F
 from fitter import rssmmodel 
 
 previous_mean = None
@@ -9,7 +10,7 @@ def plan(h_t, s_t):
     rssmmodel.eval()
     
     with torch.no_grad():
-        
+
         if previous_mean is not None:
             new_mean = torch.cat([
                 previous_mean[1:], 
@@ -30,18 +31,22 @@ def plan(h_t, s_t):
                 std.expand(candidates, -1, -1)
             ) 
             
-            candidates_actions_prob = torch.softmax(candidates_actions_logits, dim=-1)
+            # discretization
+            # one Hot encoding
+            candidates_actions_hard = F.gumbel_softmax(
+                candidates_actions_logits, 
+                tau=1.0, 
+                hard=True, 
+                dim=-1
+            )
 
-            #JIT Rollout
-            rewards = rssmmodel.rollout_horizon(h_init, s_init, candidates_actions_prob)
+            # JIT rollout 
+            rewards = rssmmodel.rollout_horizon(h_init, s_init, candidates_actions_hard)
 
             top_values, top_idx = torch.topk(rewards, K, dim=0)
-            
-            # refit based on the distribution parameters,
-            # not the softmaxed probabs, to keep the Gaussian sampling valid.
+
             top_actions = candidates_actions_logits[top_idx]    
 
-            # refit
             mean = top_actions.mean(dim=0)                
             std  = top_actions.std(dim=0) + 1e-5   
 
