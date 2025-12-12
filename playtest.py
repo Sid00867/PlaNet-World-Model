@@ -92,9 +92,9 @@ def play():
                     o_embed=obs_embed
                 )
 
-                showimage(obs_next_raw['image'])
+                # showimage(obs_next_raw['image'])
                 # print(obs_next_raw['image'].shape)
-                # showimage(o_recon)
+                showimage(o_recon)
 
                 playenv.render()
                 # time.sleep(STEP_DELAY)
