@@ -51,7 +51,7 @@ def showimage(image):
     plt.imshow(image)
     plt.show()
 
-def play():
+def play(random_exp):
 
     for ep in range(NUM_EPISODES):
 
@@ -74,6 +74,12 @@ def play():
                 a_onehot = plan(h, s).unsqueeze(0)
 
                 action = a_onehot.argmax(-1).item()
+
+                if random_exp:
+                    if torch.rand(1) < 0.10: # 10% chance to act randomly
+                        action = torch.randint(0, action_dim, (1,)).item()
+                    else:
+                        action = a_onehot.argmax(-1).item()
                 
                 obs_next_raw, reward, terminated, truncated, info, _ = playenv.step(action)
 
@@ -94,7 +100,7 @@ def play():
 
                 # showimage(obs_next_raw['image'])
                 # print(obs_next_raw['image'].shape)
-                showimage(o_recon)
+                # showimage(o_recon)
 
                 playenv.render()
                 # time.sleep(STEP_DELAY)
@@ -106,4 +112,4 @@ def play():
 
 
 if __name__ == "__main__":
-    play()
+    play(True)

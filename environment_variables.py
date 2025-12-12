@@ -29,10 +29,10 @@ grad_clipping_value = 10.0
 # PLANNING (CPU LIGHTWEIGHT)
 # ======================================================
 
-planning_horizon = 32       # Reduced from 20: fast short-term planning
+planning_horizon = 20       # Reduced from 20: fast short-term planning
 optimization_iters = 20      # Reduced from 15: "good enough" planning
-candidates = 500            # Reduced from 500: less compute per step
-K = 50                      # Reduced from 50: fit to top 10%
+candidates = 2000            # Reduced from 500: less compute per step
+K = 100                      # Reduced from 50: fit to top 10%
 
 # ======================================================
 # MODEL FITTING (CPU LIGHTWEIGHT)

@@ -34,6 +34,8 @@ def run_data_collection(buffer, pbar):
         done = False
         episode_len = 0
 
+        cumulative_return = 0.0
+
         while env_steps < total_env_steps:
 
             a_onehot = plan(h, s)              
@@ -63,6 +65,8 @@ def run_data_collection(buffer, pbar):
                 if reached_goal or done or env_steps >= total_env_steps:
                     break
 
+            cumulative_return += reward_sum    
+
             obs_next = preprocess_obs(obs_next_raw)
             obs_input = obs_next.unsqueeze(0) # (1, C, H, W)
 
@@ -84,7 +88,7 @@ def run_data_collection(buffer, pbar):
             )
 
             log_environment_step(
-                reward=reward_sum,
+                reward=cumulative_return,
                 episode_len=episode_len,
                 done=done,
                 action_repeat=action_repeat,
@@ -95,6 +99,7 @@ def run_data_collection(buffer, pbar):
 
             # Reset episode 
             if done:
+                cumulative_return = 0.0
                 reset_planner()
                 obs_raw, _ = env.reset()
                 obs = preprocess_obs(obs_raw)
