@@ -155,8 +155,8 @@ seed_replay_buffer_episodes = 20 # Quick start
 # METRICS (EARLY STOPPING)
 # ======================================================
 
-metrics_storage_window = 100
-small_metric_window = 20
+metrics_storage_window = 1000
+small_metric_window = 200
 
 loss_eps = 1e-4
 recon_eps = 1e-4
