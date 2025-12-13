@@ -1,50 +1,42 @@
-# Visualizes a trained RSSM + planner agent playing in the environment.
 
 import time
 import torch
+import numpy as np
+import matplotlib.pyplot as plt
 
 from environment_variables import *
-from rssm import rssm
 from planner import plan, reset_planner
 from explore_sample import preprocess_obs
-import matplotlib.pyplot as plt
+
+
+from fitter import rssmmodel, actor_net 
 
 playenv = make_play_env()
 
 MODEL_PATH = weights_path  
 NUM_EPISODES = 5
-STEP_DELAY = 0.05   # seconds between frames
+STEP_DELAY = 0.05  
+checkpoint = torch.load(MODEL_PATH, map_location=DEVICE)
 
-rssmmodel = rssm().to(DEVICE)
-rssmmodel.load_state_dict(torch.load(MODEL_PATH, map_location=DEVICE))
+rssmmodel.load_state_dict(checkpoint['rssm'])
+actor_net.load_state_dict(checkpoint['actor'])
+
 rssmmodel.eval()
-
-import numpy as np # Ensure numpy is imported
+actor_net.eval()
 
 def showimage(image):
-    # CASE 1: Raw Environment Observation (Numpy)
-    # Shape is already (H, W, C) -> (28, 28, 3). Matplotlib loves this.
     if isinstance(image, np.ndarray):
-        # If it's 3D and channels are last, just show it
         if image.ndim == 3 and image.shape[2] == 3:
             plt.imshow(image)
             plt.show()
             return
-    
-    # CASE 2: Model Output (PyTorch Tensor)
-    # Shape is (Batch, C, H, W) or (C, H, W). Matplotlib hates this.
+
     if hasattr(image, "detach"):
         image = image.detach().cpu().numpy()
-
-    # Remove batch dimension if present: (1, 3, 28, 28) -> (3, 28, 28)
     if image.ndim == 4:
         image = image[0]
-
-    # Rearrange channels: (3, 28, 28) -> (28, 28, 3)
     if image.shape[0] == 3:
         image = image.transpose(1, 2, 0)
-
-    # Normalize if the model output is not in 0-1 range (optional safety)
     if image.max() > 1.0:
         image = image / 255.0
 
@@ -61,8 +53,15 @@ def play(random_exp):
         obs_raw, _ = playenv.reset()
         obs = preprocess_obs(obs_raw)
 
-        h = torch.zeros(1, deterministic_dim, device=DEVICE)
-        s = torch.zeros(1, latent_dim, device=DEVICE)
+        dummy_action = torch.zeros(1, action_dim, device=DEVICE)
+        obs_embed = rssmmodel.obs_encoder(obs.unsqueeze(0))
+        
+        _, _, _, _, h, s = rssmmodel.forward_train(
+            h_prev=torch.zeros(1, deterministic_dim, device=DEVICE),
+            s_prev=torch.zeros(1, latent_dim, device=DEVICE),
+            a_prev=dummy_action,
+            o_embed=obs_embed
+        )
 
         done = False
         step = 0
@@ -72,15 +71,14 @@ def play(random_exp):
             with torch.no_grad():
 
                 a_onehot = plan(h, s).unsqueeze(0)
-
                 action = a_onehot.argmax(-1).item()
 
                 if random_exp:
-                    if torch.rand(1) < 0.30: # 10% chance to act randomly
+                    if torch.rand(1) < 0.30: 
                         action = torch.randint(0, action_dim, (1,)).item()
                     else:
                         action = a_onehot.argmax(-1).item()
-                
+
                 obs_next_raw, reward, terminated, truncated, info, _ = playenv.step(action)
 
                 print(f"Step: {step}, Action: {action}, Reward: {reward:.3f}")
@@ -88,7 +86,6 @@ def play(random_exp):
                 done = terminated or truncated
 
                 obs_next = preprocess_obs(obs_next_raw)
-
                 obs_embed = rssmmodel.obs_encoder(obs_next.unsqueeze(0))
 
                 (mu_post, _), _, o_recon, _, h, s = rssmmodel.forward_train(
@@ -99,7 +96,6 @@ def play(random_exp):
                 )
 
                 # showimage(obs_next_raw['image'])
-                # print(obs_next_raw['image'].shape)
                 # showimage(o_recon)
 
                 playenv.render()
@@ -112,4 +108,5 @@ def play(random_exp):
 
 
 if __name__ == "__main__":
+    # Ensure this is FALSE to test the actual intelligence
     play(False)

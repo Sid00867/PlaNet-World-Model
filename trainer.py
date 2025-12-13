@@ -4,12 +4,13 @@ import torch
 from tqdm import tqdm 
 import torch.nn.functional as F
 from fitter import train_sequence
-from fitter import rssmmodel
+from fitter import rssmmodel, actor_net, critic_net
 from explore_sample import run_data_collection
 from replaybuffer import ReplayBuffer
 from metrics import METRICS, plot_metrics
 from explore_sample import preprocess_obs
 from planner import reset_planner
+
 
 buffer = ReplayBuffer(
     capacity_episodes=replay_buffer_capacity,
@@ -73,14 +74,20 @@ def convergence_trainer():
 
             pbar.set_postfix({
                 "Loss": f"{stats['loss_total']:.4f}",
+                "Act": f"{stats['loss_actor']:.3f}",   # NEW
+                "Crit": f"{stats['loss_critic']:.3f}", # NEW
                 "PSNR": f"{stats['psnr']:.2f}",
-                "Return": f"{stats['return']:.1f}",
-                "Success": f"{100*stats['success_rate']:.1f}%",
-                "EnvSteps": stats["env_steps"],
+                "Ret": f"{stats['return']:.1f}",       # Shortened "Return" to "Ret" to save space
+                "Succ": f"{100*stats['success_rate']:.0f}%", # Shortened
+                "Step": stats["env_steps"],
             })
 
             if outer_iter % weight_save_freq_for_outer_iters == 0:
-                torch.save(rssmmodel.state_dict(), weights_path)
+                torch.save({
+                    'rssm': rssmmodel.state_dict(),
+                    'actor': actor_net.state_dict(),
+                    'critic': critic_net.state_dict()
+                }, weights_path)
 
     print("\n==== TRAINING CONVERGED ====")
     print("Final metrics:")
@@ -94,4 +101,8 @@ def convergence_trainer():
 if __name__ == "__main__":
     seed_replay_buffer()
     convergence_trainer()
-    torch.save(rssmmodel.state_dict(), weights_path)
+    torch.save({
+                    'rssm': rssmmodel.state_dict(),
+                    'actor': actor_net.state_dict(),
+                    'critic': critic_net.state_dict()
+                }, weights_path)

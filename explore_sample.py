@@ -28,9 +28,16 @@ def run_data_collection(buffer, pbar):
         obs_raw, _ = env.reset()
         obs = preprocess_obs(obs_raw)
 
-        h = torch.zeros(1, deterministic_dim, device=DEVICE)
-        s = torch.zeros(1, latent_dim, device=DEVICE)
+        dummy_action = torch.zeros(1, action_dim, device=DEVICE)
+        obs_embed = rssmmodel.obs_encoder(obs.unsqueeze(0))
 
+        _, _, _, _, h, s = rssmmodel.forward_train(
+                    h_prev=torch.zeros(1, deterministic_dim, device=DEVICE),
+                    s_prev=torch.zeros(1, latent_dim, device=DEVICE),
+                    a_prev=dummy_action,
+                    o_embed=obs_embed
+                )
+        
         done = False
         episode_len = 0
 
@@ -101,10 +108,20 @@ def run_data_collection(buffer, pbar):
             if done:
                 cumulative_return = 0.0
                 reset_planner()
+            
                 obs_raw, _ = env.reset()
                 obs = preprocess_obs(obs_raw)
-                h = torch.zeros(1, deterministic_dim, device=DEVICE)
-                s = torch.zeros(1, latent_dim, device=DEVICE)
+                
+                obs_input = obs.unsqueeze(0)
+                obs_embed = rssmmodel.obs_encoder(obs_input)
+                
+                _, _, _, _, h, s = rssmmodel.forward_train(
+                    h_prev=torch.zeros(1, deterministic_dim, device=DEVICE),
+                    s_prev=torch.zeros(1, latent_dim, device=DEVICE),
+                    a_prev=dummy_action,
+                    o_embed=obs_embed
+                )
+                
                 done = False
                 episode_len = 0
 

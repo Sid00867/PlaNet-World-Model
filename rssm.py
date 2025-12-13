@@ -3,7 +3,6 @@ import pandas as pd
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torch.jit
 from environment_variables import *
 
 class rssm(nn.Module):
@@ -54,21 +53,17 @@ class rssm(nn.Module):
             nn.Sigmoid()
         )
 
-        # reward model
+        # reward model 
         self.reward_model = nn.Sequential(
             nn.Linear(latent_dim + deterministic_dim, 256),
-            nn.BatchNorm1d(256),
-            nn.ReLU(),
-            nn.Dropout(0.2),
+            nn.ELU(), 
             nn.Linear(256, 1)
         )
 
         # prior model
         self.prior_fc = nn.Sequential(
             nn.Linear(deterministic_dim, 256),
-            nn.BatchNorm1d(256),
-            nn.ReLU(),
-            nn.Dropout(0.2),
+            nn.ELU(), 
             nn.Linear(256, 128),
         )
 
@@ -104,49 +99,45 @@ class rssm(nn.Module):
         reward_pred = self.reward_model(reward_input).squeeze(-1)
 
         return (mu_post, log_sigma_post), (mu_prior, log_sigma_prior), o_recon, reward_pred, h_t, s_t_post
-    
-    @torch.jit.export
-    def rollout_horizon(self, h, s, actions):
-        """
-        Fast loop for planning
-        """
-        rewards = torch.zeros(actions.size(0), device=h.device)
+
+    #use rssm, actor model to imagine from input state to a set horzion, return state and action sequences
+    def imagine_rollout(self, actor, start_h, start_s, horizon):
+        h = start_h
+        s = start_s
         
-        for t in range(actions.size(1)):
-            act = actions[:, t]
-            
-            gru_input = torch.cat([s, act], dim=-1)
+        # store the dream
+        h_seq = []
+        s_seq = []
+        action_seq = []
+        
+        for t in range(horizon):
+            state_features = torch.cat([s, h], dim=-1)
+            action_logits = actor(state_features.detach()) #  stopping gradients calculation here coz
+            #we do not want to accidentally train the world model to make the world easier for the actor (while training actor) (actor model is indpenedent of world model)
+
+            if self.training:
+                action_prob = F.softmax(action_logits, dim=-1)
+                action_dist = torch.distributions.OneHotCategorical(probs=action_prob)
+                action = action_dist.sample() # convert action logits to probs, sample one action based on thos probs, make one hot vec
+
+                action = action + (action_prob - action_prob.detach()) # during forward pass, both action_probs would cancel each other out 
+                #leaving only action for in the simulation. but while optimizing (backpropagating), pytorch doesnt see action cause it sampled and 
+                #one cannot find a gradient of a sample operation, action_prob.detach() would withdraw itself from gradient caluculation bcoz of .detach(),
+                #leaving the gradients of only action prob. The Actor learns as if it had passed the soft probabilities to the world model.
+                # It learns: "If I had slightly increased the probability of [0], the loss would have gone down."
+            else:
+                action = F.one_hot(action_logits.argmax(-1), action_dim).float() 
+
+            gru_input = torch.cat([s, action], dim=-1)
             h = self.gru(gru_input, h)
             
             prior_hidden = self.prior_fc(h)
-            mu_prior = self.prior_mu(prior_hidden)
-            s = mu_prior 
-
-            reward_input = torch.cat([s, h], dim=-1)
-            r = self.reward_model(reward_input).squeeze(-1)
+            mu = self.prior_mu(prior_hidden)
+            s = mu 
             
-            rewards += r
+            h_seq.append(h)
+            s_seq.append(s)
+            action_seq.append(action)
             
-        return rewards
+        return torch.stack(h_seq), torch.stack(s_seq), torch.stack(action_seq)
     
-    
-    def imagine_step(self, h, s, a, sample=False):
-        gru_input = torch.cat([s, a], dim=-1)    
-        h_next = self.gru(gru_input, h)          
-
-        prior_hidden = self.prior_fc(h_next)
-        mu_prior = self.prior_mu(prior_hidden)
-        log_sigma_prior = self.prior_log_sigma(prior_hidden)
-
-        if sample:
-            sigma = torch.exp(log_sigma_prior)
-            s_next = mu_prior + sigma * torch.randn_like(sigma)
-        else:
-            s_next = mu_prior
-
-        return h_next, s_next
-    
-    
-    def reward(self, s, h):
-        reward_input = torch.cat([s, h], dim=-1)
-        return self.reward_model(reward_input).squeeze(-1)

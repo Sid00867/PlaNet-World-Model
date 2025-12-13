@@ -30,11 +30,13 @@ grad_clipping_value = 100.0 # Allow strong gradients to learn physics quickly
 # PLANNING (DENSE SEARCH)
 # ======================================================
 
-# Horizon of 15 is enough to see "around the corner" in 10x10
-planning_horizon = 18       
-optimization_iters = 15     # Slightly more thinking time for complex maps
-candidates = 1250           # Dense sampling is critical for random obstacles
-K = 100                     
+actor_lr = 8e-5         
+value_lr = 8e-5
+imagination_horizon = 20
+
+#lambda returns
+gamma = 0.99
+lambda_=0.95 #95 percent trust in reality over dreamt predictions in bellman optimality equatiob
 
 # ======================================================
 # MODEL FITTING (HEAVY DUTY)
@@ -50,7 +52,7 @@ seq_len = 12                # Longer memory to handle navigation/backtracking
 # ======================================================
 
 total_env_steps = 500 #SHOULD NOT GO BELOW 400       
-exploration_noise = 0.35    # High noise prevents getting stuck in random corners
+exploration_noise = 0.15    # High noise prevents getting stuck in random corners
 action_repeat = 2
 
 # ======================================================
@@ -73,7 +75,7 @@ recon_eps = 1e-5
 psnr_eps = 0.01
 min_success = 0.85          # Expect slightly lower success on truly random hard maps
 min_steps = 5000            
-max_steps = 200000          # 10x longer training for generalization
+max_steps = 150000          # 10x longer training for generalization
 
 # ======================================================
 # SAVE FREQUENCY (SAFE)

@@ -52,6 +52,10 @@ class ExperimentMetrics:
         self.kl_loss      = RollingStats(window=metrics_storage_window)
         self.reward_loss = RollingStats(window=metrics_storage_window)
 
+        # --- dreamer metrics (NEW) ---
+        self.actor_loss   = RollingStats(window=metrics_storage_window)
+        self.critic_loss  = RollingStats(window=metrics_storage_window)
+
         # --- visual quality ---
         self.psnr = RollingStats(window=small_metric_window)
 
@@ -78,6 +82,10 @@ class ExperimentMetrics:
         if reward is not None:
             self.reward_loss.add(reward)
 
+    def add_actor_critic_loss(self, actor, critic):
+        self.actor_loss.add(actor)
+        self.critic_loss.add(critic)
+
     def add_psnr(self, value):
         self.psnr.add(value)
 
@@ -103,6 +111,8 @@ class ExperimentMetrics:
             "loss_recon": self.recon_mse.mean(),
             "loss_kl": self.kl_loss.mean(),
             "loss_reward": self.reward_loss.mean(),
+            "loss_actor": self.actor_loss.mean(),   # NEW
+            "loss_critic": self.critic_loss.mean(), # NEW
             "psnr": self.psnr.mean(),
             "return": self.episode_returns.mean(),
             "success_rate": self.success_rate.mean(),
@@ -139,18 +149,6 @@ class ExperimentMetrics:
         min_steps=min_steps,
         max_steps=max_steps
     ):
-        """
-        Unified stopping condition for the outer loop.
-
-        Converged when:
-
-        - training loss change is small
-        - reconstruction error stopped improving
-        - PSNR stable
-        - success rate is high
-        - enough environment interaction has occurred
-        """
-
         if self.env_steps > max_steps:
             return True
         if self.env_steps < min_steps:
@@ -185,36 +183,40 @@ class ExperimentMetrics:
         ax.grid(True)
 
 
+    def plot_metrics(self): # Changed to method for easier access if needed, or keep separate function
+        pass
+
 def plot_metrics(metrics):
     """
-    Displays dashboard of major training curves:
-    - World loss
-    - Reconstruction MSE
-    - PSNR
-    - Episode return
-    - Success rate
-    - Episode length
+    Displays dashboard of major training curves.
+    Expanded to 4x2 grid to include Actor/Critic.
     """
 
-    fig, axes = plt.subplots(3, 2, figsize=(12, 12))
-    fig.suptitle("Training & Planning Metrics", fontsize=14)
+    fig, axes = plt.subplots(4, 2, figsize=(12, 16)) # Taller figure
+    fig.suptitle("Dreamer Training Metrics", fontsize=14)
 
+    # Row 1: World Model
     metrics._plot_series(axes[0,0], metrics.world_loss.buffer,
                 "World Model Total Loss", "loss")
-
     metrics._plot_series(axes[0,1], metrics.recon_mse.buffer,
                 "Reconstruction MSE", "mse")
 
-    metrics._plot_series(axes[1,0], metrics.psnr.buffer,
-                "PSNR", "dB")
+    # Row 2: Actor / Critic (NEW)
+    metrics._plot_series(axes[1,0], metrics.actor_loss.buffer,
+                "Actor Loss (Policy)", "loss", color="green")
+    metrics._plot_series(axes[1,1], metrics.critic_loss.buffer,
+                "Critic Loss (Value)", "mse", color="red")
 
-    metrics._plot_series(axes[1,1], metrics.episode_returns.buffer,
+    # Row 3: Quality & Return
+    metrics._plot_series(axes[2,0], metrics.psnr.buffer,
+                "PSNR", "dB")
+    metrics._plot_series(axes[2,1], metrics.episode_returns.buffer,
                 "Episode Return", "return")
 
-    metrics._plot_series(axes[2,0], metrics.success_rate.buffer,
+    # Row 4: Task Performance
+    metrics._plot_series(axes[3,0], metrics.success_rate.buffer,
                 "Success Rate", "fraction")
-
-    metrics._plot_series(axes[2,1], metrics.episode_lengths.buffer,
+    metrics._plot_series(axes[3,1], metrics.episode_lengths.buffer,
                 "Episode Length", "steps")
 
     plt.tight_layout()

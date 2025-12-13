@@ -10,7 +10,7 @@ def log_environment_step(
     action_repeat,
     success=False,
 ):
-    # Count environment steps
+
     METRICS.step_env(action_repeat)
 
     # If episode finished, record episode results
@@ -27,6 +27,8 @@ def log_training_step(
     recon_loss,
     kl_loss,
     reward_loss,
+    actor_loss=None, 
+    critic_loss=None, 
     psnr=None,
 ):
     """
@@ -39,6 +41,9 @@ def log_training_step(
         kl=kl_loss,
         reward=reward_loss,
     )
+    
+    if actor_loss is not None and critic_loss is not None:
+        METRICS.add_actor_critic_loss(actor_loss, critic_loss)
 
     if psnr is not None:
         METRICS.add_psnr(psnr)
