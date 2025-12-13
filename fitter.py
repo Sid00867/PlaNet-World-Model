@@ -96,13 +96,17 @@ def train_actor_critic(start_h, start_s):
     critic_loss = F.mse_loss(imagined_values[:-1], lambda_targets[:-1].detach())
     
     actor_optimizer.zero_grad()
-    actor_loss.backward(retain_graph=True) # Retain because graph is shared
-    torch.nn.utils.clip_grad_norm_(actor_net.parameters(), grad_clipping_value)
-    actor_optimizer.step()
-    
     critic_optimizer.zero_grad()
+    
+    actor_loss.backward(retain_graph=True) 
     critic_loss.backward()
+    
+    # Clip grads
+    torch.nn.utils.clip_grad_norm_(actor_net.parameters(), grad_clipping_value)
     torch.nn.utils.clip_grad_norm_(critic_net.parameters(), grad_clipping_value)
+    
+    # Update weights (Only now is it safe to modify parameters)
+    actor_optimizer.step()
     critic_optimizer.step()
     
     return actor_loss.item(), critic_loss.item()
