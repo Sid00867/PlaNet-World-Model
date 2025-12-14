@@ -16,7 +16,7 @@ playenv = make_play_env()
 MODEL_PATH = weights_path  
 NUM_EPISODES = 5
 STEP_DELAY = 0.05  
-checkpoint = torch.load(MODEL_PATH, map_location=DEVICE)
+checkpoint = torch.load("rssm_final.pth", map_location=DEVICE)
 
 rssmmodel.load_state_dict(checkpoint['rssm'])
 actor_net.load_state_dict(checkpoint['actor'])
@@ -70,7 +70,11 @@ def play(random_exp):
 
             with torch.no_grad():
 
-                a_onehot = plan(h, s).unsqueeze(0)
+                a_onehot = plan(h, s) 
+
+                if a_onehot.dim() == 1:
+                    a_onehot = a_onehot.unsqueeze(0)
+
                 action = a_onehot.argmax(-1).item()
 
                 if random_exp:
